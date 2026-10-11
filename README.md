@@ -1,10 +1,10 @@
 # Catatan Santri
 
-Website editorial Catatan Santri dengan suasana visual Mercury: hero panorama, navigasi transparan, perpaduan gelap dan putih hangat, tombol membulat, ilustrasi, serta animasi halus.
+Website editorial Catatan Santri: panorama dengan zoom ke buku saat scroll, perpaduan gelap dan putih hangat, kategori bergerak perlahan, serta ruang baca yang mengikuti blog.
 
 ## Deploy ke Cloudflare Pages
 
-Pilih **Workers & Pages → Create application → Pages → Connect to Git**, lalu pilih repository ini.
+Hubungkan repository ini melalui Git integration Cloudflare Pages.
 
 | Pengaturan | Nilai |
 | --- | --- |
@@ -15,62 +15,69 @@ Pilih **Workers & Pages → Create application → Pages → Connect to Git**, l
 | Root directory | Kosong / root repository |
 | Environment variable wajib | Tidak ada |
 
-Tidak perlu `npm install`, API key, Bun, atau lockfile. Node bawaan Cloudflare menjalankan script build tanpa dependency. Jika pengaturan Cloudflare lama masih berisi perintah Bun/NPM, ganti dengan pengaturan di atas.
+Tidak perlu instalasi dependency, API key, database, Bun, atau lockfile. Folder `functions/` harus tetap berada di root repository; Cloudflare akan memasukkannya saat deployment Git. Mengunggah folder `dist/` saja melalui dashboard tidak mengaktifkan Functions. Deploy ulang dari GitHub setelah perubahan ini agar pembaruan langsung aktif.
 
-Build menghasilkan halaman artikel, metadata SEO, `robots.txt`, dan sitemap dengan origin dari `CF_PAGES_URL` yang disediakan Cloudflare. Untuk custom domain, tambahkan environment variable opsional `SITE_URL` berisi origin domain final, misalnya `https://domain-anda.com`, lalu deploy ulang. Hubungkan domain lewat menu **Custom domains** setelah deployment pertama berhasil.
+Untuk domain sendiri, tambahkan environment variable opsional `SITE_URL` berisi origin domain final, lalu hubungkan lewat menu Custom domains. Sitemap dinamis mengikuti domain yang dipakai pengunjung. Preview deployment memakai robots yang melarang pengindeksan.
 
-Panduan resmi: https://developers.cloudflare.com/pages/framework-guides/deploy-anything/
+Panduan resmi: https://developers.cloudflare.com/pages/functions/get-started/
 
-## Isi dan fitur
+## Pembaruan isi otomatis
 
-- 26 posting dan gambar sampul dari feed publik https://www.catatansantri.com/ pada 11 Oktober 2026.
-- Logo PNG transparan asli yang diberikan pemilik; dipakai pada header, footer, favicon, dan halaman 404.
-- Pencarian judul/isi, kategori, pengurutan, muat lebih banyak, dan simpan artikel di browser.
-- Ruang baca dengan ukuran teks, progress membaca, dan berbagi lewat salin tautan, WhatsApp, serta Telegram.
-- Setiap posting punya halaman HTML langsung di `/artikel/<id>/`, agar dapat dibuka tanpa JavaScript dan dibagikan.
-- Facebook, Instagram, WhatsApp, YouTube, Threads, Pinterest, dan Telegram sesuai tautan publik blog.
-- Halaman 404, metadata Open Graph, structured data, sitemap, robots, header keamanan, dan cache aset.
-- Tampilan responsif, menu mobile, navigasi keyboard, dan pengurangan animasi sesuai pengaturan perangkat.
-- Hero mengikuti scroll dengan zoom ke buku sebelum menuju bagian berikutnya; kategori bergerak perlahan dari kanan ke kiri dan berhenti saat hover/fokus.
+- `/api/blog` membaca seluruh feed publik https://www.catatansantri.com/, termasuk pagination; tanpa akun atau API key.
+- Data blog disimpan di cache Cloudflare selama 10 menit. Beranda memeriksa saat dibuka, setiap 5 menit selama tab aktif, ketika kembali ke tab, dan setelah koneksi kembali online.
+- Biasanya perubahan terlihat dalam sekitar 10–15 menit saat blog tersedia dan website dikunjungi. Ini bukan jadwal cron yang berjalan ketika website tidak dikunjungi.
+- Artikel baru, revisi judul/isi/gambar, kategori baru, dan artikel yang dihapus mengikuti feed. Pilihan bacaan memuat tulisan terbaru dan pilihan yang berganti setiap hari; pengingat diambil dari kutipan isi blog saat ini.
+- `/artikel/<id>/` menghasilkan halaman langsung dari feed. Artikel baru dapat dibagikan sebelum build berikutnya. `/sitemap.xml` juga mengikuti daftar artikel terbaru.
+- Pembaruan ditunda selama ruang baca terbuka agar tidak mengganti teks saat pengunjung sedang membaca.
+- Jika blog gagal diakses, website memakai snapshot yang tersimpan. Snapshot diperbarui saat build Cloudflare; halaman statis tetap tersedia sebagai cadangan.
 
-Konten saat ini berupa snapshot blog. Arsip Telegram tidak berhasil diakses saat impor; Telegram ditautkan ke channel asli, bukan diklaim sebagai sumber posting yang diimpor. Tidak ada sinkronisasi otomatis. Artikel etalase buku menuju blog asli untuk fitur belanjanya.
+Functions hanya berjalan di API blog, halaman artikel, dan sitemap; halaman/aset lain tetap statis. Permintaan Functions mengikuti kuota akun Cloudflare. Tidak ada sinkronisasi arsip Telegram; channel tetap ditautkan.
 
-## Memperbarui artikel
+## Profil dan alamat
+
+Tentang Kami, Siapa Kami, Visi–Misi, dan alamat ada di beranda serta `/tentang/`. Teks profil dan draf visi–misi disusun dari pengenalan publik di blog. Alamat diberikan langsung oleh pemilik; tombol Google Maps menggunakan pencarian alamat tersebut, bukan koordinat yang diasumsikan.
+
+Edit `lib/site.mjs` untuk mengubah profil/alamat. Profil ini merupakan konten editorial tetap, terpisah dari pembaruan artikel blog.
+
+## Fitur lainnya
+
+Logo asli pemilik, tujuh media sosial dari blog, pencarian, filter kategori, pengurutan, bookmark browser, ukuran teks, progress membaca, berbagi WhatsApp/Telegram, halaman 404, metadata SEO, dan pengurangan animasi sesuai pengaturan perangkat. Artikel etalase buku menuju blog asli untuk fitur belanjanya.
+
+## Memperbarui snapshot manual
 
 ```bash
-python3 scripts/import-blog.py
+node scripts/sync-blog.mjs
 node scripts/build.mjs
 node scripts/check.mjs
 ```
 
-Python menggunakan standard library saja. Commit perubahan data, aset, dan halaman hasil build ke GitHub; Cloudflare akan deploy ulang dari branch `main`.
+Perintah lama `python3 scripts/import-blog.py` tetap tersedia sebagai wrapper untuk script Node yang sama. Pembaruan langsung di website tidak memerlukan commit manual setiap kali blog berubah.
 
-## Memeriksa website
+## Pemeriksaan
 
 ```bash
 node --check dist/app.js
 node --check dist/motion.js
+node --test tests/*.test.mjs
 node scripts/build.mjs
 node scripts/check.mjs
 ```
 
-Untuk preview lokal, setelah build:
-
-```bash
-python3 -m http.server 8000 --directory dist
-```
-
-Buka http://localhost:8000. File deploy adalah seluruh folder `dist/`, bukan hanya `index.html`.
+Preview statis: `python3 -m http.server 8000 --directory dist`. Untuk pengujian Functions lokal gunakan Wrangler Pages; server Python hanya menampilkan snapshot.
 
 ## Struktur
 
 ```text
-dist/                  HTML, CSS, JavaScript, data, dan aset untuk deployment
-dist/artikel/          Halaman artikel hasil build
-scripts/build.mjs      Generate halaman statis dan metadata deployment
-scripts/check.mjs      Validasi aset, data, tautan, dan halaman
-scripts/import-blog.py Refresh snapshot feed Blogger
-wrangler.jsonc         Konfigurasi Cloudflare Pages
+dist/                   Halaman statis, CSS, JS, data cadangan, dan aset
+functions/api/blog.js    Endpoint pembaruan isi
+functions/artikel/      Halaman artikel langsung
+functions/sitemap.xml.js Sitemap dinamis
+lib/blog.mjs            Impor, sanitasi, pagination, cache, dan fallback
+lib/render.mjs          Renderer halaman yang dipakai build dan Functions
+lib/site.mjs            Profil, alamat, visi–misi, dan media sosial
+scripts/sync-blog.mjs    Refresh snapshot
+scripts/build.mjs        Build Cloudflare dan halaman cadangan
+tests/                  Pemeriksaan sinkronisasi, renderer, dan interaksi
 ```
 
 Website tidak mengumpulkan email atau menjalankan analitik/iklan. Bookmark disimpan di browser pengunjung. Tautan eksternal mengikuti kebijakan layanan tujuan.
