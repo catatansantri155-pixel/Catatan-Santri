@@ -31,6 +31,7 @@ Panduan resmi: https://developers.cloudflare.com/pages/framework-guides/deploy-a
 - Facebook, Instagram, WhatsApp, YouTube, Threads, Pinterest, dan Telegram sesuai tautan publik blog.
 - Halaman 404, metadata Open Graph, structured data, sitemap, robots, header keamanan, dan cache aset.
 - Tampilan responsif, menu mobile, navigasi keyboard, dan pengurangan animasi sesuai pengaturan perangkat.
+- Hero mengikuti scroll dengan zoom ke buku sebelum menuju bagian berikutnya; kategori bergerak perlahan dari kanan ke kiri dan berhenti saat hover/fokus.
 
 Konten saat ini berupa snapshot blog. Arsip Telegram tidak berhasil diakses saat impor; Telegram ditautkan ke channel asli, bukan diklaim sebagai sumber posting yang diimpor. Tidak ada sinkronisasi otomatis. Artikel etalase buku menuju blog asli untuk fitur belanjanya.
 
@@ -48,6 +49,7 @@ Python menggunakan standard library saja. Commit perubahan data, aset, dan halam
 
 ```bash
 node --check dist/app.js
+node --check dist/motion.js
 node scripts/build.mjs
 node scripts/check.mjs
 ```
